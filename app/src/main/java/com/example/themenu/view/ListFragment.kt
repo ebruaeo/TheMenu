@@ -30,7 +30,9 @@ class ListFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        db = Room.databaseBuilder(requireContext(), RecipeDataBase::class.java, "Recipes").build()
+        db = Room.databaseBuilder(requireContext(), RecipeDataBase::class.java, "Recipes")
+            .fallbackToDestructiveMigration()
+            .build()
         recipeDAO = db.recipeDao()
 
     }

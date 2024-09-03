@@ -11,7 +11,9 @@ data class Recipe(
     @ColumnInfo(name = "ingredients")
     var ingredients: String,
     @ColumnInfo(name = "picture" )
-    var picture: ByteArray
+    var picture: ByteArray,
+    @ColumnInfo(name = "cook")
+    var recipe: String
 ){
     @PrimaryKey(autoGenerate = true)
     var id = 0
