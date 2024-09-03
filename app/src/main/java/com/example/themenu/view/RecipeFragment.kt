@@ -22,7 +22,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.Navigation
 import androidx.room.Room
-import androidx.room.RoomDatabase
 import com.example.themenu.databinding.FragmentRecipeBinding
 import com.example.themenu.model.Recipe
 import com.example.themenu.roomdb.RecipeDAO
@@ -54,10 +53,13 @@ class RecipeFragment : Fragment() {
         super.onCreate(savedInstanceState)
         registerLauncher()
 
-        db = Room.databaseBuilder(requireContext(), RecipeDataBase::class.java, "Recipes").build()
+        db = Room.databaseBuilder(requireContext(), RecipeDataBase::class.java, "Recipes")
+            .fallbackToDestructiveMigration()
+            .build()
         recipeDAO = db.recipeDao()
 
     }
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -73,6 +75,7 @@ class RecipeFragment : Fragment() {
         binding.saveButton.setOnClickListener { save(it) }
         binding.deleteButton.setOnClickListener { delete(it) }
         binding.imageView.setOnClickListener { choosePic(it) }
+        binding.updateButton.setOnClickListener { save(it) }
 
         arguments?.let {
             val info = RecipeFragmentArgs.fromBundle(it).info
@@ -81,9 +84,11 @@ class RecipeFragment : Fragment() {
                 // yeni bilgi eklenecek
                 chosenRecipe = null
                 binding.deleteButton.isEnabled = false
+                binding.updateButton.isEnabled = false
                 binding.saveButton.isEnabled = true
             } else {
                 binding.deleteButton.isEnabled = true
+                binding.updateButton.isEnabled = true
                 binding.saveButton.isEnabled = false
                 val id = RecipeFragmentArgs.fromBundle(it).id
 
@@ -103,6 +108,7 @@ class RecipeFragment : Fragment() {
     private fun handleResponse(recipe: Recipe) {
         binding.nameText.setText(recipe.name)
         binding.ingredientText.setText(recipe.ingredients)
+        binding.recipeText.setText(recipe.recipe)
         val bitmap = BitmapFactory.decodeByteArray(recipe.picture, 0, recipe.picture.size)
         binding.imageView.setImageBitmap(bitmap)
         chosenRecipe = recipe
@@ -112,17 +118,18 @@ class RecipeFragment : Fragment() {
     fun save(view: View) {
         val name = binding.nameText.text.toString()
         val ingredient = binding.ingredientText.text.toString()
+        val recipe = binding.recipeText.text.toString()
         if (secilenBitmap != null) {
             val smallBitmap = createSmallBitmap(secilenBitmap!!, 300)
             val outputStream = ByteArrayOutputStream()
             smallBitmap.compress(Bitmap.CompressFormat.PNG, 50, outputStream)
             val byteArray = outputStream.toByteArray()
 
-            val recipe = Recipe(name, ingredient, byteArray)
+            val recipe2 = Recipe(name, ingredient, byteArray, recipe)
 
 
             mdisposable.add(
-                recipeDAO.insert(recipe)
+                recipeDAO.insert(recipe2)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(this::handleResponseForInsert)
@@ -150,6 +157,7 @@ class RecipeFragment : Fragment() {
 
 
     }
+
 
     fun choosePic(view: View) {
 
