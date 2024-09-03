@@ -1,4 +1,4 @@
-package com.example.themenu
+package com.example.themenu.view
 
 import android.Manifest
 import android.content.Intent
@@ -13,18 +13,14 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.MediaController
 import android.widget.Toast
-import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.example.themenu.databinding.FragmentListBinding
 import com.example.themenu.databinding.FragmentRecipeBinding
 import com.google.android.material.snackbar.Snackbar
-import java.io.IOException
 import java.lang.Exception
 
 
