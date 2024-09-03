@@ -20,7 +20,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.themenu.databinding.FragmentRecipeBinding
+import com.example.themenu.model.Recipe
 import com.google.android.material.snackbar.Snackbar
+import java.io.ByteArrayOutputStream
 import java.lang.Exception
 
 
@@ -70,6 +72,16 @@ class RecipeFragment : Fragment() {
     }
 
     fun save(view: View) {
+        val name = binding.nameText.text.toString()
+        val ingredient = binding.ingredientText.text.toString()
+        if (secilenBitmap != null) {
+            val smallBitmap = createSmallBitmap(secilenBitmap!!, 300)
+            val outputStream = ByteArrayOutputStream()
+            smallBitmap.compress(Bitmap.CompressFormat.PNG, 50, outputStream)
+            val byteArray = outputStream.toByteArray()
+
+            val recipe = Recipe(name, ingredient, byteArray)
+        }
 
     }
 
@@ -190,6 +202,27 @@ class RecipeFragment : Fragment() {
                     Toast.makeText(requireContext(), "izin verilmedi", Toast.LENGTH_SHORT).show()
                 }
             }
+    }
+
+    private fun createSmallBitmap(usersBitmap: Bitmap, maximumSize: Int): Bitmap {
+        var width = usersBitmap.width
+        var height = usersBitmap.height
+
+        val bitmapSize: Double = width.toDouble() / height.toDouble()
+
+        if (bitmapSize > 1) {
+            // görsel yatay
+            width = maximumSize
+            val newHeight = width / bitmapSize
+            height = newHeight.toInt()
+        } else {
+            // görsel dikey
+            height = maximumSize
+            val newWidth = height * bitmapSize
+            width = newWidth.toInt()
+
+        }
+        return Bitmap.createScaledBitmap(usersBitmap, width, height, true)
     }
 
     override fun onDestroyView() {
