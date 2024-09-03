@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
@@ -19,9 +20,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.navigation.Navigation
+import androidx.room.Room
+import androidx.room.RoomDatabase
 import com.example.themenu.databinding.FragmentRecipeBinding
 import com.example.themenu.model.Recipe
+import com.example.themenu.roomdb.RecipeDAO
+import com.example.themenu.roomdb.RecipeDataBase
 import com.google.android.material.snackbar.Snackbar
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.disposables.CompositeDisposable
+import io.reactivex.rxjava3.schedulers.Schedulers
 import java.io.ByteArrayOutputStream
 import java.lang.Exception
 
@@ -35,8 +44,18 @@ class RecipeFragment : Fragment() {
     private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
     private var secilenGorsel: Uri? = null
     private var secilenBitmap: Bitmap? = null
+
+    private lateinit var db: RecipeDataBase
+    private lateinit var recipeDAO: RecipeDAO
+
+    private val mdisposable = CompositeDisposable()
+    private var chosenRecipe: Recipe? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        registerLauncher()
+
+        db = Room.databaseBuilder(requireContext(), RecipeDataBase::class.java, "Recipes").build()
+        recipeDAO = db.recipeDao()
 
     }
 
@@ -60,16 +79,35 @@ class RecipeFragment : Fragment() {
 
             if (info == "new") {
                 // yeni bilgi eklenecek
+                chosenRecipe = null
                 binding.deleteButton.isEnabled = false
                 binding.saveButton.isEnabled = true
             } else {
                 binding.deleteButton.isEnabled = true
                 binding.saveButton.isEnabled = false
+                val id = RecipeFragmentArgs.fromBundle(it).id
+
+                mdisposable.add(
+                    recipeDAO.findById(id)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(this::handleResponse)
+
+                )
+
             }
         }
 
-        registerLauncher()
     }
+
+    private fun handleResponse(recipe: Recipe) {
+        binding.nameText.setText(recipe.name)
+        binding.ingredientText.setText(recipe.ingredients)
+        val bitmap = BitmapFactory.decodeByteArray(recipe.picture, 0, recipe.picture.size)
+        binding.imageView.setImageBitmap(bitmap)
+        chosenRecipe = recipe
+    }
+
 
     fun save(view: View) {
         val name = binding.nameText.text.toString()
@@ -81,11 +119,35 @@ class RecipeFragment : Fragment() {
             val byteArray = outputStream.toByteArray()
 
             val recipe = Recipe(name, ingredient, byteArray)
+
+
+            mdisposable.add(
+                recipeDAO.insert(recipe)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(this::handleResponseForInsert)
+            )
+
         }
 
     }
 
+    private fun handleResponseForInsert() {
+        // bir önceki fragmenta dön
+        val action = RecipeFragmentDirections.actionRecipeFragmentToListFragment()
+        Navigation.findNavController(requireView()).navigate(action)
+    }
+
     fun delete(view: View) {
+        if (chosenRecipe != null) {
+            mdisposable.add(
+                recipeDAO.delete(recipe = chosenRecipe!!)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(this::handleResponseForInsert)
+            )
+        }
+
 
     }
 
@@ -228,6 +290,7 @@ class RecipeFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+        mdisposable.clear()
     }
 
 }
